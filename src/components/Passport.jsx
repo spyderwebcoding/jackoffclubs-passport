@@ -1,4 +1,3 @@
-"use client";
 import { useState, useEffect, useCallback } from "react";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -389,6 +388,16 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [celebration, setCelebration] = useState(null);
   const [qrActive, setQrActive] = useState(true);
+  const [profile, setProfile] = useState({
+    displayName: "Motor City Mike",
+    email: "mike@motorcityjacks.com",
+    homeClubId: "c15",
+    city: "Detroit, MI",
+    memberSince: "2025-09-01",
+    bio: "Been in the scene since day one. Love connecting with guys at clubs across the country.",
+  });
+  const [showProfile, setShowProfile] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
 
   // Derived state
   const uniqueClubIds = [...new Set(checkIns.map(c => c.clubId))];
@@ -467,7 +476,8 @@ export default function App() {
   });
 
   // Leaderboard
-  const myRank = { name: "You", clubs: uniqueClubIds.length, tier, homeClub: "Motor City Jacks — Detroit", isYou: true };
+  const homeClub = ALL_CLUBS.find(c => c.id === profile.homeClubId);
+  const myRank = { name: profile.displayName, clubs: uniqueClubIds.length, tier, homeClub: `${homeClub?.name} — ${homeClub?.city?.split(",")[0]}`, isYou: true };
   const leaderboard = [...LEADERBOARD_OTHERS, myRank].sort((a, b) => b.clubs - a.clubs).map((p, i) => ({ ...p, rank: i + 1 }));
 
   // Admin stats
@@ -497,6 +507,169 @@ export default function App() {
         />
       )}
 
+      {/* Profile Overlay */}
+      {showProfile && (() => {
+        const ProfileContent = () => {
+          const [draft, setDraft] = useState({ ...profile });
+          const hc = ALL_CLUBS.find(c => c.id === draft.homeClubId);
+
+          function save() {
+            setProfile(draft);
+            setEditingProfile(false);
+            setToast("Profile updated!");
+          }
+
+          return (
+            <Overlay onClose={() => { setShowProfile(false); setEditingProfile(false); }}>
+              <div style={{ maxHeight: "75vh", overflowY: "auto" }}>
+                {/* Avatar */}
+                <div style={{ textAlign: "center", marginBottom: 16 }}>
+                  <div style={{
+                    width: 72, height: 72, borderRadius: 36, margin: "0 auto 12px",
+                    background: "linear-gradient(135deg, #8B4513, #CD7F32)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 28, color: "#0A0A0F", fontWeight: 700, fontFamily: "system-ui, sans-serif",
+                  }}>
+                    {draft.displayName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                  </div>
+                  {!editingProfile && (
+                    <>
+                      <div style={{ fontSize: 20, color: "#F0EDE6", marginBottom: 2 }}>{profile.displayName}</div>
+                      <div style={{ fontSize: 12, color: "#6B6560", fontFamily: "system-ui, sans-serif" }}>{profile.email}</div>
+                    </>
+                  )}
+                </div>
+
+                {!editingProfile ? (
+                  <>
+                    {/* Profile Details */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+                      {[
+                        { label: "Home Club", value: hc ? `${hc.name} — ${hc.city}` : "Not set" },
+                        { label: "Location", value: profile.city || "Not set" },
+                        { label: "Member Since", value: new Date(profile.memberSince).toLocaleDateString("en-US", { month: "long", year: "numeric" }) },
+                        { label: "Tier", value: tier },
+                        { label: "Clubs Visited", value: uniqueClubIds.length },
+                        { label: "Reviews Left", value: reviews.length },
+                      ].map(item => (
+                        <div key={item.label} style={{
+                          display: "flex", justifyContent: "space-between", alignItems: "center",
+                          padding: "8px 0", borderBottom: "1px solid #1A1A22",
+                        }}>
+                          <span style={{ fontSize: 12, color: "#6B6560", fontFamily: "system-ui, sans-serif" }}>{item.label}</span>
+                          <span style={{ fontSize: 13, color: "#E8E4DD", fontFamily: "system-ui, sans-serif" }}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Bio */}
+                    {profile.bio && (
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#6B6560", fontFamily: "system-ui, sans-serif", marginBottom: 6 }}>About</div>
+                        <div style={{ fontSize: 13, color: "#A09888", lineHeight: 1.6, fontFamily: "system-ui, sans-serif", fontStyle: "italic" }}>
+                          "{profile.bio}"
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Badges row */}
+                    <div style={{ marginBottom: 20 }}>
+                      <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#6B6560", fontFamily: "system-ui, sans-serif", marginBottom: 8 }}>Badges earned</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {earnedAchievements.map(a => {
+                          const def = ACHIEVEMENT_DEFS.find(d => d.type === a);
+                          return (
+                            <span key={a} style={{
+                              padding: "4px 8px", borderRadius: 8,
+                              background: "rgba(205,127,50,0.12)", border: "1px solid rgba(205,127,50,0.25)",
+                              fontSize: 11, color: "#CD7F32", fontFamily: "system-ui, sans-serif",
+                            }}>
+                              {def?.icon} {def?.title}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Btn primary onClick={() => setEditingProfile(true)}>Edit Profile</Btn>
+                      <Btn onClick={() => { setShowProfile(false); setEditingProfile(false); }}>Close</Btn>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Edit Form */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+                      {[
+                        { key: "displayName", label: "Display Name", type: "text" },
+                        { key: "email", label: "Email", type: "email" },
+                        { key: "city", label: "City", type: "text" },
+                      ].map(field => (
+                        <div key={field.key}>
+                          <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#6B6560", fontFamily: "system-ui, sans-serif", marginBottom: 4 }}>{field.label}</div>
+                          <input
+                            type={field.type}
+                            value={draft[field.key]}
+                            onChange={e => setDraft(prev => ({ ...prev, [field.key]: e.target.value }))}
+                            style={{
+                              width: "100%", padding: "10px 14px", background: "#0E0E14",
+                              border: "1px solid #2A2A35", borderRadius: 10, color: "#E8E4DD",
+                              fontSize: 13, fontFamily: "system-ui, sans-serif", outline: "none",
+                              boxSizing: "border-box",
+                            }}
+                          />
+                        </div>
+                      ))}
+
+                      {/* Home Club Selector */}
+                      <div>
+                        <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#6B6560", fontFamily: "system-ui, sans-serif", marginBottom: 4 }}>Home Club</div>
+                        <select
+                          value={draft.homeClubId}
+                          onChange={e => setDraft(prev => ({ ...prev, homeClubId: e.target.value }))}
+                          style={{
+                            width: "100%", padding: "10px 14px", background: "#0E0E14",
+                            border: "1px solid #2A2A35", borderRadius: 10, color: "#E8E4DD",
+                            fontSize: 13, fontFamily: "system-ui, sans-serif", outline: "none",
+                            boxSizing: "border-box", appearance: "none",
+                          }}
+                        >
+                          {ALL_CLUBS.map(c => (
+                            <option key={c.id} value={c.id}>{c.name} — {c.city}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Bio */}
+                      <div>
+                        <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#6B6560", fontFamily: "system-ui, sans-serif", marginBottom: 4 }}>Bio</div>
+                        <textarea
+                          value={draft.bio}
+                          onChange={e => setDraft(prev => ({ ...prev, bio: e.target.value }))}
+                          placeholder="Tell other members about yourself..."
+                          style={{
+                            width: "100%", minHeight: 80, background: "#0E0E14",
+                            border: "1px solid #2A2A35", borderRadius: 10, padding: 12, color: "#E8E4DD",
+                            fontSize: 13, fontFamily: "system-ui, sans-serif", resize: "vertical",
+                            outline: "none", lineHeight: 1.5, boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Btn primary onClick={save}>Save</Btn>
+                      <Btn onClick={() => setEditingProfile(false)}>Cancel</Btn>
+                    </div>
+                  </>
+                )}
+              </div>
+            </Overlay>
+          );
+        };
+        return <ProfileContent />;
+      })()}
+
       {/* Screen Toggle */}
       <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "center", gap: 0, padding: "12px 24px 0" }}>
         {["passport", "admin"].map(s => (
@@ -510,6 +683,16 @@ export default function App() {
             {s === "passport" ? "My Passport" : "Club Admin"}
           </button>
         ))}
+        <button onClick={() => setShowProfile(true)} style={{
+          position: "absolute", right: 24, top: 10,
+          width: 32, height: 32, borderRadius: 16,
+          background: "linear-gradient(135deg, #8B4513, #CD7F32)",
+          border: "none", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 13, color: "#0A0A0F", fontWeight: 700, fontFamily: "system-ui, sans-serif",
+        }}>
+          {profile.displayName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+        </button>
       </div>
 
       {/* ─── PASSPORT SCREEN ──────────────────────────────────────────── */}
