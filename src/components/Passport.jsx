@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -398,6 +400,48 @@ export default function App() {
   });
   const [showProfile, setShowProfile] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  // PWA install prompt
+  useEffect(() => {
+    // Check if already installed or dismissed
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
+    if (window.navigator.standalone === true) return;
+    const dismissed = sessionStorage.getItem("installDismissed");
+    if (dismissed) return;
+
+    // Android: listen for beforeinstallprompt
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setTimeout(() => setShowInstallPrompt(true), 3000);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+
+    // iOS: show custom prompt after delay
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      setTimeout(() => setShowInstallPrompt(true), 3000);
+    }
+
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  function handleInstall() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(() => {
+        setDeferredPrompt(null);
+        setShowInstallPrompt(false);
+      });
+    }
+  }
+
+  function dismissInstall() {
+    setShowInstallPrompt(false);
+    sessionStorage.setItem("installDismissed", "true");
+  }
 
   // Derived state
   const uniqueClubIds = [...new Set(checkIns.map(c => c.clubId))];
@@ -496,6 +540,61 @@ export default function App() {
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
       {celebration && <AchievementCelebration achievement={celebration} onClose={() => setCelebration(null)} />}
+
+      {/* Install Prompt */}
+      {showInstallPrompt && (
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 250,
+          background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.6) 20%)",
+          padding: "40px 0 0",
+        }}>
+          <div style={{
+            maxWidth: 420, margin: "0 auto",
+            background: "#1A1A28", borderTop: "1px solid #CD7F32",
+            borderRadius: "16px 16px 0 0",
+            padding: "20px 24px 28px",
+            boxShadow: "0 -8px 32px rgba(0,0,0,0.5)",
+          }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+                background: "linear-gradient(135deg, #8B4513, #CD7F32)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 22,
+              }}>
+                📱
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, color: "#F0EDE6", marginBottom: 4 }}>
+                  Add to Home Screen
+                </div>
+                {deferredPrompt ? (
+                  <div style={{ fontSize: 12, color: "#8A8070", lineHeight: 1.5, fontFamily: "system-ui, sans-serif" }}>
+                    Install the Jack Off Clubs passport for quick access — works like a native app.
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: "#8A8070", lineHeight: 1.5, fontFamily: "system-ui, sans-serif" }}>
+                    Tap the <span style={{ display: "inline-flex", alignItems: "center", verticalAlign: "middle", padding: "1px 4px", background: "#2A2A35", borderRadius: 4, fontSize: 14 }}>
+                      ⬆
+                    </span> share button below, then tap <strong style={{ color: "#CD7F32" }}>"Add to Home Screen"</strong> for the full app experience.
+                  </div>
+                )}
+              </div>
+              <button onClick={dismissInstall} style={{
+                background: "none", border: "none", color: "#5A5550",
+                fontSize: 18, cursor: "pointer", padding: "0 4px", lineHeight: 1,
+              }}>✕</button>
+            </div>
+
+            {deferredPrompt && (
+              <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                <Btn primary onClick={handleInstall} style={{ flex: 1 }}>Install App</Btn>
+                <Btn onClick={dismissInstall} style={{ flex: 0 }}>Later</Btn>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {showScanner && <QRScanner clubs={ALL_CLUBS} onScan={handleCheckIn} onClose={() => setShowScanner(false)} />}
       {selectedStamp && (
         <StampDetail
