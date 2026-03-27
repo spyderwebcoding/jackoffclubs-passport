@@ -4,32 +4,33 @@ import { useState, useEffect, useCallback } from "react";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
+const Z = "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=80,h=80,fit=crop/AoP4G0k1ojT1BOBO/";
 const ALL_CLUBS = [
-  { id: "c1", name: "BATE:Raleigh", city: "Raleigh, NC", region: "Southeast", country: "USA", logo: "🔵" },
-  { id: "c2", name: "Atlanta Jacks", city: "Atlanta, GA", region: "Southeast", country: "USA", logo: "🍑" },
-  { id: "c3", name: "New York Jacks", city: "New York, NY", region: "Northeast", country: "USA", logo: "🗽" },
-  { id: "c4", name: "Stumptown Strokes", city: "Portland, OR", region: "Northwest", country: "USA", logo: "🌲" },
-  { id: "c5", name: "Denver Jacks", city: "Denver, CO", region: "Mountain", country: "USA", logo: "🏔️" },
-  { id: "c6", name: "Rain City Jacks", city: "Seattle, WA", region: "Northwest", country: "USA", logo: "🌧️" },
-  { id: "c7", name: "Paris Jacks", city: "Paris, France", region: "International", country: "France", logo: "🇫🇷" },
-  { id: "c8", name: "Austin Jacks", city: "Austin, TX", region: "Southwest", country: "USA", logo: "🤠" },
-  { id: "c9", name: "Windy City Jacks", city: "Chicago, IL", region: "Midwest", country: "USA", logo: "🌬️" },
-  { id: "c10", name: "Boston Jacks", city: "Boston, MA", region: "Northeast", country: "USA", logo: "🅱️" },
-  { id: "c11", name: "Queen City Jacks", city: "Charlotte, NC", region: "Southeast", country: "USA", logo: "👑" },
-  { id: "c12", name: "Guerilla Jax", city: "San Francisco, CA", region: "Southwest", country: "USA", logo: "🌉" },
-  { id: "c13", name: "Music City Jacks", city: "Nashville, TN", region: "Southeast", country: "USA", logo: "🎵" },
-  { id: "c14", name: "Philly Jacks", city: "Philadelphia, PA", region: "Northeast", country: "USA", logo: "🔔" },
-  { id: "c15", name: "Motor City Jacks", city: "Detroit, MI", region: "Midwest", country: "USA", logo: "🚗" },
-  { id: "c16", name: "Orlando Jacks", city: "Orlando, FL", region: "Southeast", country: "USA", logo: "🌴" },
-  { id: "c17", name: "LAX Jacks", city: "Los Angeles, CA", region: "Southwest", country: "USA", logo: "🌊" },
-  { id: "c18", name: "Toronto Jacks", city: "Toronto, Canada", region: "International", country: "Canada", logo: "🍁" },
-  { id: "c19", name: "DMV Jacks", city: "Washington, DC", region: "Southeast", country: "USA", logo: "🏛️" },
-  { id: "c20", name: "Triad Jacks", city: "Greensboro, NC", region: "Southeast", country: "USA", logo: "🔺" },
-  { id: "c21", name: "Bator Bro", city: "London, England", region: "International", country: "England", logo: "🇬🇧" },
-  { id: "c22", name: "Columbus Jacks", city: "Columbus, OH", region: "Midwest", country: "USA", logo: "⭕" },
-  { id: "c23", name: "Neptune Jacks", city: "Norfolk, VA", region: "Southeast", country: "USA", logo: "🔱" },
-  { id: "c24", name: "Palm Springs Jacks", city: "Palm Springs, CA", region: "Southwest", country: "USA", logo: "☀️" },
-  { id: "c25", name: "Burgh Bate Buds", city: "Pittsburgh, PA", region: "Northeast", country: "USA", logo: "🟡" },
+  { id: "c1", name: "BATE:Raleigh", city: "Raleigh, NC", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.23.41-pm-mP43Qzo4LgSBg24G.png" },
+  { id: "c2", name: "Atlanta Jacks", city: "Atlanta, GA", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "atlantajacksb8-YZ9EbpwqBLuMQ8Mk.jpg" },
+  { id: "c3", name: "New York Jacks", city: "New York, NY", region: "Northeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.09.33-pm-mP43QWRwLjH84X6m.png" },
+  { id: "c4", name: "Stumptown Strokes", city: "Portland, OR", region: "Northwest", country: "USA", logo: null, logoUrl: Z + "file-Yle4yl5451IqVkvm.jpg" },
+  { id: "c5", name: "Denver Jacks", city: "Denver, CO", region: "Mountain", country: "USA", logo: null, logoUrl: Z + "download-1-m7VDKZZVDRsbjvKL.jpeg" },
+  { id: "c6", name: "Rain City Jacks", city: "Seattle, WA", region: "Northwest", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.27.31-pm-Yg249vPeXJu9PGXb.png" },
+  { id: "c7", name: "Paris Jacks", city: "Paris, France", region: "International", country: "France", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.15.55-pm-dWxLbQX3vxT8rpkY.png" },
+  { id: "c8", name: "Austin Jacks", city: "Austin, TX", region: "Southwest", country: "USA", logo: null, logoUrl: Z + "austinjacks_avatar-thumbnail_logo-mePgnQn9QbC628jr.webp" },
+  { id: "c9", name: "Windy City Jacks", city: "Chicago, IL", region: "Midwest", country: "USA", logo: null, logoUrl: Z + "20250926_174043-m5K8bEbD55S4rJZl.jpg" },
+  { id: "c10", name: "Boston Jacks", city: "Boston, MA", region: "Northeast", country: "USA", logo: null, logoUrl: "https://assets.zyrosite.com/AoP4G0k1ojT1BOBO/673fc0842999a3f2d05d17e9_horizontal-transparent-A1azJN78xlt3pRev.svg" },
+  { id: "c11", name: "Queen City Jacks", city: "Charlotte, NC", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "69bfc4da-5f8f-405e-958d-4bffb7126371_queencity-jacks-mxB27bw1vDhRXn58.webp" },
+  { id: "c12", name: "Guerilla Jax", city: "San Francisco, CA", region: "Southwest", country: "USA", logo: null, logoUrl: Z + "download-6-d95Zgq6lDOCwNeGV.jpeg" },
+  { id: "c13", name: "Music City Jacks", city: "Nashville, TN", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.08.36-pm-m7VDK96vz9TKZ7OZ.png" },
+  { id: "c14", name: "Philly Jacks", city: "Philadelphia, PA", region: "Northeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.16.42-pm-Y4LPJ97ge9uOXBLD.png" },
+  { id: "c15", name: "Motor City Jacks", city: "Detroit, MI", region: "Midwest", country: "USA", logo: null, logoUrl: Z + "c174e5_7e0d35c3ee254bec8f76aea2451aeb79~mv2-AzGM74BEpJs0qaxg.png" },
+  { id: "c16", name: "Orlando Jacks", city: "Orlando, FL", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "download-A1azJxQabQsP8ELk.png" },
+  { id: "c17", name: "LAX Jacks", city: "Los Angeles, CA", region: "Southwest", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.03.08-pm-A1azJ9vXJqfbbBon.png" },
+  { id: "c18", name: "Toronto Jacks", city: "Toronto, Canada", region: "International", country: "Canada", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.29.40-pm-YrD4NZoLN0fe4XrQ.png" },
+  { id: "c19", name: "DMV Jacks", city: "Washington, DC", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.30.51-pm-d95Zgqyp7zT7qrJK.png" },
+  { id: "c20", name: "Triad Jacks", city: "Greensboro, NC", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "triad-jacks-gFTSUCzdIUrJhAtv.png" },
+  { id: "c21", name: "Bator Bro", city: "London, England", region: "International", country: "England", logo: null, logoUrl: Z + "img_20250927_140816_788-dWxLy6JpgXUzxPw3.png" },
+  { id: "c22", name: "Columbus Jacks", city: "Columbus, OH", region: "Midwest", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-4.55.44-pm-Awv8kbqk4ai9XBnm.png" },
+  { id: "c23", name: "Neptune Jacks", city: "Norfolk, VA", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.10.34-pm-Aq2GobRx4EhLBjv9.png" },
+  { id: "c24", name: "Palm Springs Jacks", city: "Palm Springs, CA", region: "Southwest", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.15.05-pm-YbN49go1w9uDX7Np.png" },
+  { id: "c25", name: "Burgh Bate Buds", city: "Pittsburgh, PA", region: "Northeast", country: "USA", logo: null, logoUrl: Z + "burgh-bate-buds-logo-Awv8k5X2WgiJ6BK4.png" },
 ];
 
 const ACHIEVEMENT_DEFS = [
@@ -81,6 +82,33 @@ function getNextTier(uniqueClubs) {
 
 function fmtDate(d) { return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
 function fmtTime(d) { return new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
+
+function ClubLogo({ club, size = 40 }) {
+  if (club?.logoUrl) {
+    return (
+      <img
+        src={club.logoUrl}
+        alt={club.name}
+        style={{
+          width: size, height: size, borderRadius: size * 0.2,
+          objectFit: "cover", background: "#1A1A28",
+        }}
+        onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
+      />
+    );
+  }
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: size * 0.2,
+      background: "linear-gradient(135deg, #2A2A35, #1A1A28)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.4, color: "#CD7F32", fontWeight: 700,
+      fontFamily: "system-ui, sans-serif",
+    }}>
+      {club?.name?.charAt(0) || "?"}
+    </div>
+  );
+}
 
 function evaluateAchievements(checkIns, reviews) {
   const uniqueClubIds = [...new Set(checkIns.map(c => c.clubId))];
@@ -265,7 +293,7 @@ function QRScanner({ clubs, onScan, onClose }) {
                 border: selected === club.id ? "1px solid #CD7F32" : "1px solid transparent",
                 marginBottom: 4, transition: "all 0.15s",
               }}>
-              <span style={{ fontSize: 20 }}>{club.logo}</span>
+              <ClubLogo club={club} size={32} />
               <div style={{ textAlign: "left" }}>
                 <div style={{ fontSize: 13, color: "#E8E4DD" }}>{club.name}</div>
                 <div style={{ fontSize: 10, color: "#5A5550", fontFamily: "system-ui, sans-serif" }}>{club.city}</div>
@@ -301,7 +329,7 @@ function StampDetail({ checkIn, club, review, onSaveReview, onClose }) {
   return (
     <Overlay onClose={onClose}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>{club.logo}</div>
+        <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><ClubLogo club={club} size={64} /></div>
         <div style={{ fontSize: 20, color: "#F0EDE6", marginBottom: 2 }}>{club.name}</div>
         <div style={{ fontSize: 13, color: "#8A8070", fontFamily: "system-ui, sans-serif", marginBottom: 8 }}>{club.city}</div>
 
@@ -867,7 +895,7 @@ export default function App() {
                           x{s.visitCount}
                         </div>
                       )}
-                      <div style={{ fontSize: 28, marginBottom: 4, position: "relative" }}>{s.club?.logo}</div>
+                      <div style={{ marginBottom: 4, position: "relative" }}><ClubLogo club={s.club} size={36} /></div>
                       <div style={{ fontSize: 9, letterSpacing: 1, color: "#8A8070", textAlign: "center", padding: "0 6px", fontFamily: "system-ui, sans-serif", position: "relative", lineHeight: 1.3 }}>
                         {s.club?.city}
                       </div>
