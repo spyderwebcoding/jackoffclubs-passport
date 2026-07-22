@@ -1,14 +1,20 @@
 export const metadata = {
   title: "Jack Off Clubs — Digital Passport",
   description: "Collect stamps from Jack Off Clubs worldwide. Track visits, earn achievements, and climb the leaderboard.",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
-  themeColor: "#0A0A0F",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "JOC Passport",
   },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#0A0A0F",
 };
 
 export default function RootLayout({ children }) {
@@ -21,6 +27,17 @@ export default function RootLayout({ children }) {
       </head>
       <body style={{ margin: 0, padding: 0, background: "#0A0A0F", minHeight: "100vh" }}>
         {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ("serviceWorker" in navigator) {
+                window.addEventListener("load", () => {
+                  navigator.serviceWorker.register("/sw.js").catch(() => {});
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
