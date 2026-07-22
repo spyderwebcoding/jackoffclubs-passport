@@ -1,66 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
-// ─── Data ────────────────────────────────────────────────────────────────────
-
-const Z = "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=80,h=80,fit=crop/AoP4G0k1ojT1BOBO/";
-const ALL_CLUBS = [
-  { id: "c1", name: "BATE:Raleigh", city: "Raleigh, NC", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.23.41-pm-mP43Qzo4LgSBg24G.png" },
-  { id: "c2", name: "Atlanta Jacks", city: "Atlanta, GA", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "atlantajacksb8-YZ9EbpwqBLuMQ8Mk.jpg" },
-  { id: "c3", name: "New York Jacks", city: "New York, NY", region: "Northeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.09.33-pm-mP43QWRwLjH84X6m.png" },
-  { id: "c4", name: "Stumptown Strokes", city: "Portland, OR", region: "Northwest", country: "USA", logo: null, logoUrl: Z + "file-Yle4yl5451IqVkvm.jpg" },
-  { id: "c5", name: "Denver Jacks", city: "Denver, CO", region: "Mountain", country: "USA", logo: null, logoUrl: Z + "download-1-m7VDKZZVDRsbjvKL.jpeg" },
-  { id: "c6", name: "Rain City Jacks", city: "Seattle, WA", region: "Northwest", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.27.31-pm-Yg249vPeXJu9PGXb.png" },
-  { id: "c7", name: "Paris Jacks", city: "Paris, France", region: "International", country: "France", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.15.55-pm-dWxLbQX3vxT8rpkY.png" },
-  { id: "c8", name: "Austin Jacks", city: "Austin, TX", region: "Southwest", country: "USA", logo: null, logoUrl: Z + "austinjacks_avatar-thumbnail_logo-mePgnQn9QbC628jr.webp" },
-  { id: "c9", name: "Windy City Jacks", city: "Chicago, IL", region: "Midwest", country: "USA", logo: null, logoUrl: Z + "20250926_174043-m5K8bEbD55S4rJZl.jpg" },
-  { id: "c10", name: "Boston Jacks", city: "Boston, MA", region: "Northeast", country: "USA", logo: null, logoUrl: "https://assets.zyrosite.com/AoP4G0k1ojT1BOBO/673fc0842999a3f2d05d17e9_horizontal-transparent-A1azJN78xlt3pRev.svg" },
-  { id: "c11", name: "Queen City Jacks", city: "Charlotte, NC", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "69bfc4da-5f8f-405e-958d-4bffb7126371_queencity-jacks-mxB27bw1vDhRXn58.webp" },
-  { id: "c12", name: "Guerilla Jax", city: "San Francisco, CA", region: "Southwest", country: "USA", logo: null, logoUrl: Z + "download-6-d95Zgq6lDOCwNeGV.jpeg" },
-  { id: "c13", name: "Music City Jacks", city: "Nashville, TN", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.08.36-pm-m7VDK96vz9TKZ7OZ.png" },
-  { id: "c14", name: "Philly Jacks", city: "Philadelphia, PA", region: "Northeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.16.42-pm-Y4LPJ97ge9uOXBLD.png" },
-  { id: "c15", name: "Motor City Jacks", city: "Detroit, MI", region: "Midwest", country: "USA", logo: null, logoUrl: Z + "c174e5_7e0d35c3ee254bec8f76aea2451aeb79~mv2-AzGM74BEpJs0qaxg.png" },
-  { id: "c16", name: "Orlando Jacks", city: "Orlando, FL", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "download-A1azJxQabQsP8ELk.png" },
-  { id: "c17", name: "LAX Jacks", city: "Los Angeles, CA", region: "Southwest", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.03.08-pm-A1azJ9vXJqfbbBon.png" },
-  { id: "c18", name: "Toronto Jacks", city: "Toronto, Canada", region: "International", country: "Canada", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.29.40-pm-YrD4NZoLN0fe4XrQ.png" },
-  { id: "c19", name: "DMV Jacks", city: "Washington, DC", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.30.51-pm-d95Zgqyp7zT7qrJK.png" },
-  { id: "c20", name: "Triad Jacks", city: "Greensboro, NC", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "triad-jacks-gFTSUCzdIUrJhAtv.png" },
-  { id: "c21", name: "Bator Bro", city: "London, England", region: "International", country: "England", logo: null, logoUrl: Z + "img_20250927_140816_788-dWxLy6JpgXUzxPw3.png" },
-  { id: "c22", name: "Columbus Jacks", city: "Columbus, OH", region: "Midwest", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-4.55.44-pm-Awv8kbqk4ai9XBnm.png" },
-  { id: "c23", name: "Neptune Jacks", city: "Norfolk, VA", region: "Southeast", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.10.34-pm-Aq2GobRx4EhLBjv9.png" },
-  { id: "c24", name: "Palm Springs Jacks", city: "Palm Springs, CA", region: "Southwest", country: "USA", logo: null, logoUrl: Z + "screen-shot-2025-09-26-at-5.15.05-pm-YbN49go1w9uDX7Np.png" },
-  { id: "c25", name: "Burgh Bate Buds", city: "Pittsburgh, PA", region: "Northeast", country: "USA", logo: null, logoUrl: Z + "burgh-bate-buds-logo-Awv8k5X2WgiJ6BK4.png" },
-];
-
-const ACHIEVEMENT_DEFS = [
-  { type: "first_night_out", title: "First Night Out", desc: "Visit your first club", icon: "⭐" },
-  { type: "hat_trick", title: "Hat Trick", desc: "Visit 3 different clubs", icon: "🎩" },
-  { type: "high_five", title: "High Five", desc: "Visit 5 different clubs", icon: "🖐️" },
-  { type: "road_tripper", title: "Road Tripper", desc: "Visit clubs in 3 regions", icon: "🗺️" },
-  { type: "repeat_customer", title: "Repeat Customer", desc: "Attend the same club 5+ times", icon: "🔁" },
-  { type: "the_critic", title: "The Critic", desc: "Leave 5 reviews", icon: "📝" },
-  { type: "perfect_ten", title: "Perfect Ten", desc: "Visit 10 different clubs", icon: "💎" },
-  { type: "coast_to_coast", title: "Coast to Coast", desc: "Visit every region", icon: "🌎" },
-  { type: "weekend_warrior", title: "Weekend Warrior", desc: "Visit 3 clubs in one weekend", icon: "⚡" },
-  { type: "legend", title: "Legend", desc: "Visit 25 different clubs", icon: "👑" },
-];
-
-const LEADERBOARD_OTHERS = [
-  { name: "Jake M.", clubs: 24, tier: "Platinum", homeClub: "New York Jacks — NYC" },
-  { name: "Marcus R.", clubs: 18, tier: "Gold", homeClub: "Austin Jacks — Austin" },
-  { name: "Mike T.", clubs: 15, tier: "Gold", homeClub: "Rain City Jacks — Seattle" },
-];
-
-const ALL_REGIONS = ["Southeast", "Southwest", "Northeast", "Northwest", "Midwest", "Mountain", "International"];
+import { createClient } from "@/lib/supabase/client";
+import { ACHIEVEMENT_DEFS, ALL_REGIONS, getTier } from "@/lib/achievements";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getTier(uniqueClubs) {
-  if (uniqueClubs >= 20) return "Platinum";
-  if (uniqueClubs >= 10) return "Gold";
-  if (uniqueClubs >= 5) return "Silver";
-  return "Bronze";
+function normalizeClub(c) {
+  return { id: c.id, name: c.name, city: c.city, region: c.region, country: c.country, logoUrl: c.logo_url, avgRating: c.avg_rating, code: c.code };
 }
 
 function getTierStyle(tier) {
@@ -82,6 +29,13 @@ function getNextTier(uniqueClubs) {
 
 function fmtDate(d) { return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
 function fmtTime(d) { return new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
+
+async function fetchJSON(url, opts) {
+  const res = await fetch(url, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed: ${url}`);
+  return data;
+}
 
 function ClubLogo({ club, size = 40 }) {
   if (club?.logoUrl) {
@@ -108,26 +62,6 @@ function ClubLogo({ club, size = 40 }) {
       {club?.name?.charAt(0) || "?"}
     </div>
   );
-}
-
-function evaluateAchievements(checkIns, reviews) {
-  const uniqueClubIds = [...new Set(checkIns.map(c => c.clubId))];
-  const uniqueRegions = [...new Set(checkIns.map(c => ALL_CLUBS.find(cl => cl.id === c.clubId)?.region).filter(Boolean))];
-  const clubVisitCounts = {};
-  checkIns.forEach(c => { clubVisitCounts[c.clubId] = (clubVisitCounts[c.clubId] || 0) + 1; });
-  const maxVisits = Math.max(0, ...Object.values(clubVisitCounts));
-
-  const earned = [];
-  if (uniqueClubIds.length >= 1) earned.push("first_night_out");
-  if (uniqueClubIds.length >= 3) earned.push("hat_trick");
-  if (uniqueClubIds.length >= 5) earned.push("high_five");
-  if (uniqueClubIds.length >= 10) earned.push("perfect_ten");
-  if (uniqueClubIds.length >= 25) earned.push("legend");
-  if (uniqueRegions.length >= 3) earned.push("road_tripper");
-  if (uniqueRegions.length >= ALL_REGIONS.length) earned.push("coast_to_coast");
-  if (maxVisits >= 5) earned.push("repeat_customer");
-  if (reviews.length >= 5) earned.push("the_critic");
-  return earned;
 }
 
 // ─── Shared Components ───────────────────────────────────────────────────────
@@ -253,6 +187,8 @@ function AchievementCelebration({ achievement, onClose }) {
 }
 
 // ─── QR Scanner Simulation ───────────────────────────────────────────────────
+// No camera integration yet — stands in for a real scanner until one's wired up.
+// Real check-ins still go through POST /api/checkin/[code] with each club's real code.
 
 function QRScanner({ clubs, onScan, onClose }) {
   const [selected, setSelected] = useState(null);
@@ -302,7 +238,7 @@ function QRScanner({ clubs, onScan, onClose }) {
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <Btn primary onClick={() => selected && onScan(selected)} style={{ opacity: selected ? 1 : 0.4 }}>
+          <Btn primary onClick={() => selected && onScan(clubs.find(c => c.id === selected)?.code)} style={{ opacity: selected ? 1 : 0.4 }}>
             Check In
           </Btn>
           <Btn onClick={onClose}>Cancel</Btn>
@@ -392,54 +328,104 @@ function StampDetail({ checkIn, club, review, onSaveReview, onClose }) {
 
 // ─── Main App ────────────────────────────────────────────────────────────────
 
-export default function App() {
+export default function Passport() {
+  const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState("passport"); // passport | admin
   const [tab, setTab] = useState("stamps");
   const [adminTab, setAdminTab] = useState("overview");
-  const [checkIns, setCheckIns] = useState([
-    { id: "ci1", clubId: "c15", date: "2026-01-15T21:30:00", visitCount: 6 },
-    { id: "ci2", clubId: "c2", date: "2026-01-28T20:15:00", visitCount: 1 },
-    { id: "ci3", clubId: "c3", date: "2026-02-10T22:00:00", visitCount: 1 },
-    { id: "ci4", clubId: "c4", date: "2026-02-22T19:45:00", visitCount: 1 },
-    { id: "ci5", clubId: "c5", date: "2026-03-05T20:30:00", visitCount: 1 },
-    { id: "ci6", clubId: "c6", date: "2026-03-12T21:00:00", visitCount: 1 },
-    { id: "ci7", clubId: "c7", date: "2026-03-20T19:00:00", visitCount: 1 },
-  ]);
-  const [reviews, setReviews] = useState([
-    { clubId: "c15", checkInId: "ci1", rating: 5, body: "Home club. Always a great group of guys." },
-    { clubId: "c2", checkInId: "ci2", rating: 4, body: "Solid scene, welcoming crew." },
-    { clubId: "c3", checkInId: "ci3", rating: 5, body: "Legendary spot. Lived up to the hype." },
-    { clubId: "c4", checkInId: "ci4", rating: 5, body: "Incredible vibe. Can't wait to go back." },
-    { clubId: "c5", checkInId: "ci5", rating: 4, body: "Great guys, relaxed atmosphere." },
-    { clubId: "c6", checkInId: "ci6", rating: 4, body: "Well organized. Good turnout." },
-  ]);
+
+  const [sessionUser, setSessionUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState({ total_checkins: 0, unique_clubs: 0, unique_regions: 0, total_reviews: 0 });
+  const [clubs, setClubs] = useState([]);
+  const [scannableClubs, setScannableClubs] = useState([]);
+  const [stamps, setStamps] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
+
   const [selectedStamp, setSelectedStamp] = useState(null);
   const [showScanner, setShowScanner] = useState(false);
   const [toast, setToast] = useState(null);
   const [celebration, setCelebration] = useState(null);
   const [qrActive, setQrActive] = useState(true);
-  const [profile, setProfile] = useState({
-    displayName: "Motor City Mike",
-    email: "mike@motorcityjacks.com",
-    homeClubId: "c15",
-    city: "Detroit, MI",
-    memberSince: "2025-09-01",
-    bio: "Been in the scene since day one. Love connecting with guys at clubs across the country.",
-  });
   const [showProfile, setShowProfile] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
+  const buildStamps = useCallback((checkInRows, clubsById) => {
+    const byClub = new Map();
+    for (const row of checkInRows) {
+      const existing = byClub.get(row.club_id);
+      const isNewer = !existing || new Date(row.checked_in_at) > new Date(existing.date);
+      byClub.set(row.club_id, {
+        id: isNewer ? row.id : existing.id,
+        clubId: row.club_id,
+        date: isNewer ? row.checked_in_at : existing.date,
+        visitCount: (existing?.visitCount || 0) + 1,
+      });
+    }
+    return [...byClub.values()].map(s => ({ ...s, club: clubsById.get(s.clubId) }));
+  }, []);
+
+  const refreshAll = useCallback(async () => {
+    const [me, clubsRes, checkinsRes, achievementsRes, leaderboardRes] = await Promise.all([
+      fetchJSON("/api/auth/me"),
+      fetchJSON("/api/clubs"),
+      fetchJSON("/api/checkins"),
+      fetchJSON("/api/achievements"),
+      fetchJSON("/api/leaderboard"),
+    ]);
+
+    const normalizedClubs = clubsRes.clubs.map(normalizeClub);
+    const clubsById = new Map(normalizedClubs.map(c => [c.id, c]));
+
+    setSessionUser(me.user);
+    setProfile(me.profile);
+    setStats(me.stats || { total_checkins: 0, unique_clubs: 0, unique_regions: 0, total_reviews: 0 });
+    setClubs(normalizedClubs);
+    setStamps(buildStamps(checkinsRes.checkIns, clubsById));
+    setReviews(checkinsRes.reviews.map(r => ({ clubId: r.club_id, checkInId: r.check_in_id, rating: r.rating, body: r.body })));
+    setAchievements(achievementsRes.achievements.map(a => a.achievement_type));
+    setLeaderboard(leaderboardRes.leaderboard.map(row => {
+      const home = clubsById.get(row.home_club_id);
+      return {
+        userId: row.user_id, name: row.display_name, clubs: row.unique_clubs, tier: row.tier,
+        homeClub: home ? `${home.name} — ${home.city.split(",")[0]}` : "No home club set",
+        isYou: row.user_id === me.user?.id,
+      };
+    }));
+
+    return me.user?.id;
+  }, [buildStamps]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const userId = await refreshAll();
+        if (cancelled) return;
+        if (userId) {
+          const scannable = await fetchJSON("/api/clubs/scannable");
+          if (!cancelled) setScannableClubs(scannable.clubs.map(normalizeClub));
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [refreshAll]);
+
   // PWA install prompt
   useEffect(() => {
-    // Check if already installed or dismissed
     if (window.matchMedia("(display-mode: standalone)").matches) return;
     if (window.navigator.standalone === true) return;
     const dismissed = sessionStorage.getItem("installDismissed");
     if (dismissed) return;
 
-    // Android: listen for beforeinstallprompt
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -447,7 +433,6 @@ export default function App() {
     };
     window.addEventListener("beforeinstallprompt", handler);
 
-    // iOS: show custom prompt after delay
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (isIOS) {
       setTimeout(() => setShowInstallPrompt(true), 3000);
@@ -471,90 +456,78 @@ export default function App() {
     sessionStorage.setItem("installDismissed", "true");
   }
 
-  // Derived state
-  const uniqueClubIds = [...new Set(checkIns.map(c => c.clubId))];
-  const uniqueRegions = [...new Set(checkIns.map(c => ALL_CLUBS.find(cl => cl.id === c.clubId)?.region).filter(Boolean))];
-  const tier = getTier(uniqueClubIds.length);
-  const nextTier = getNextTier(uniqueClubIds.length);
-  const earnedAchievements = evaluateAchievements(checkIns, reviews);
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.reload();
+  }
 
-  // Check-in handler
-  function handleCheckIn(clubId) {
-    const prevEarned = evaluateAchievements(checkIns, reviews);
-    const existing = checkIns.find(c => c.clubId === clubId);
-    const newId = `ci${Date.now()}`;
-    const now = new Date().toISOString();
-
-    if (existing) {
-      setCheckIns(prev => prev.map(c =>
-        c.clubId === clubId ? { ...c, date: now, visitCount: (c.visitCount || 1) + 1 } : c
-      ));
-    } else {
-      setCheckIns(prev => [...prev, { id: newId, clubId, date: now, visitCount: 1 }]);
-    }
-
+  async function handleCheckIn(code) {
+    if (!code) return;
     setShowScanner(false);
-    const club = ALL_CLUBS.find(c => c.id === clubId);
-    setToast(`Checked in at ${club?.name}!`);
-
-    // Check for new achievements after state update
-    setTimeout(() => {
-      const updatedCheckIns = existing
-        ? checkIns.map(c => c.clubId === clubId ? { ...c, date: now, visitCount: (c.visitCount || 1) + 1 } : c)
-        : [...checkIns, { id: newId, clubId, date: now, visitCount: 1 }];
-      const newEarned = evaluateAchievements(updatedCheckIns, reviews);
-      const brandNew = newEarned.filter(a => !prevEarned.includes(a));
-      if (brandNew.length > 0) {
-        setTimeout(() => setCelebration(brandNew[0]), 800);
+    try {
+      const data = await fetchJSON(`/api/checkin/${code}`, { method: "POST" });
+      setToast(`Checked in at ${data.club.name}!`);
+      await refreshAll();
+      if (data.newAchievements?.length > 0) {
+        setTimeout(() => setCelebration(data.newAchievements[0]), 800);
       }
-    }, 100);
+    } catch (err) {
+      setToast(err.message || "Check-in failed");
+    }
   }
 
-  // Review handler
-  function handleSaveReview(clubId, checkInId, rating, body) {
-    const prevEarned = evaluateAchievements(checkIns, reviews);
-    setReviews(prev => {
-      const existing = prev.findIndex(r => r.clubId === clubId);
-      if (existing >= 0) {
-        const updated = [...prev];
-        updated[existing] = { ...updated[existing], rating, body };
-        return updated;
+  async function handleSaveReview(clubId, checkInId, rating, body) {
+    try {
+      const data = await fetchJSON("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clubId, checkInId, rating, body }),
+      });
+      setToast("Review saved!");
+      await refreshAll();
+      setSelectedStamp(prev => prev ? { ...prev, _refresh: Date.now() } : prev);
+      if (data.newAchievements?.length > 0) {
+        setTimeout(() => setCelebration(data.newAchievements[0]), 800);
       }
-      return [...prev, { clubId, checkInId, rating, body }];
-    });
-
-    // Refresh selected stamp
-    const ci = checkIns.find(c => c.clubId === clubId);
-    if (ci) setSelectedStamp({ ...ci, _refresh: Date.now() });
-
-    setToast("Review saved!");
-
-    // Check achievements for The Critic
-    setTimeout(() => {
-      const updatedReviews = [...reviews.filter(r => r.clubId !== clubId), { clubId, checkInId, rating, body }];
-      const newEarned = evaluateAchievements(checkIns, updatedReviews);
-      const brandNew = newEarned.filter(a => !prevEarned.includes(a));
-      if (brandNew.length > 0) {
-        setTimeout(() => setCelebration(brandNew[0]), 800);
-      }
-    }, 100);
+    } catch (err) {
+      setToast(err.message || "Could not save review");
+    }
   }
 
-  // Build stamp data
-  const stamps = checkIns.map(ci => {
-    const club = ALL_CLUBS.find(c => c.id === ci.clubId);
-    const review = reviews.find(r => r.clubId === ci.clubId);
-    return { ...ci, club, review };
-  });
+  async function handleSaveProfile(draft) {
+    try {
+      await fetchJSON("/api/auth/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ display_name: draft.displayName, city: draft.city, bio: draft.bio, home_club_id: draft.homeClubId }),
+      });
+      await refreshAll();
+      setEditingProfile(false);
+      setToast("Profile updated!");
+    } catch (err) {
+      setToast(err.message || "Could not update profile");
+    }
+  }
 
-  // Leaderboard
-  const homeClub = ALL_CLUBS.find(c => c.id === profile.homeClubId);
-  const myRank = { name: profile.displayName, clubs: uniqueClubIds.length, tier, homeClub: `${homeClub?.name} — ${homeClub?.city?.split(",")[0]}`, isYou: true };
-  const leaderboard = [...LEADERBOARD_OTHERS, myRank].sort((a, b) => b.clubs - a.clubs).map((p, i) => ({ ...p, rank: i + 1 }));
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0A0A0F", display: "flex", alignItems: "center", justifyContent: "center", color: "#8A8070", fontFamily: "system-ui, sans-serif", fontSize: 13, letterSpacing: 2 }}>
+        LOADING PASSPORT...
+      </div>
+    );
+  }
 
-  // Admin stats
-  const adminCheckIns = checkIns.filter(c => c.clubId === "c15");
-  const adminReviews = reviews.filter(r => r.clubId === "c15");
+  const uniqueClubIds = [...new Set(stamps.map(s => s.clubId))];
+  const uniqueRegions = [...new Set(stamps.map(s => s.club?.region).filter(Boolean))];
+  const tier = profile?.tier || getTier(uniqueClubIds.length);
+  const nextTier = getNextTier(uniqueClubIds.length);
+  const earnedAchievements = achievements;
+
+  const homeClub = clubs.find(c => c.id === profile?.home_club_id);
+  const adminClub = homeClub || clubs[0];
+  const adminStamps = adminClub ? stamps.filter(s => s.clubId === adminClub.id) : [];
+  const adminReviews = adminClub ? reviews.filter(r => r.clubId === adminClub.id) : [];
 
   return (
     <div style={{
@@ -623,11 +596,11 @@ export default function App() {
           </div>
         </div>
       )}
-      {showScanner && <QRScanner clubs={ALL_CLUBS} onScan={handleCheckIn} onClose={() => setShowScanner(false)} />}
+      {showScanner && <QRScanner clubs={scannableClubs} onScan={handleCheckIn} onClose={() => setShowScanner(false)} />}
       {selectedStamp && (
         <StampDetail
           checkIn={selectedStamp}
-          club={ALL_CLUBS.find(c => c.id === selectedStamp.clubId)}
+          club={clubs.find(c => c.id === selectedStamp.clubId)}
           review={reviews.find(r => r.clubId === selectedStamp.clubId)}
           onSaveReview={handleSaveReview}
           onClose={() => setSelectedStamp(null)}
@@ -635,16 +608,13 @@ export default function App() {
       )}
 
       {/* Profile Overlay */}
-      {showProfile && (() => {
+      {showProfile && profile && (() => {
         const ProfileContent = () => {
-          const [draft, setDraft] = useState({ ...profile });
-          const hc = ALL_CLUBS.find(c => c.id === draft.homeClubId);
-
-          function save() {
-            setProfile(draft);
-            setEditingProfile(false);
-            setToast("Profile updated!");
-          }
+          const [draft, setDraft] = useState({
+            displayName: profile.display_name, email: profile.email, city: profile.city || "",
+            bio: profile.bio || "", homeClubId: profile.home_club_id || "",
+          });
+          const hc = clubs.find(c => c.id === draft.homeClubId);
 
           return (
             <Overlay onClose={() => { setShowProfile(false); setEditingProfile(false); }}>
@@ -657,11 +627,11 @@ export default function App() {
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 28, color: "#0A0A0F", fontWeight: 700, fontFamily: "system-ui, sans-serif",
                   }}>
-                    {draft.displayName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                    {(draft.displayName || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   {!editingProfile && (
                     <>
-                      <div style={{ fontSize: 20, color: "#F0EDE6", marginBottom: 2 }}>{profile.displayName}</div>
+                      <div style={{ fontSize: 20, color: "#F0EDE6", marginBottom: 2 }}>{profile.display_name}</div>
                       <div style={{ fontSize: 12, color: "#6B6560", fontFamily: "system-ui, sans-serif" }}>{profile.email}</div>
                     </>
                   )}
@@ -674,7 +644,7 @@ export default function App() {
                       {[
                         { label: "Home Club", value: hc ? `${hc.name} — ${hc.city}` : "Not set" },
                         { label: "Location", value: profile.city || "Not set" },
-                        { label: "Member Since", value: new Date(profile.memberSince).toLocaleDateString("en-US", { month: "long", year: "numeric" }) },
+                        { label: "Member Since", value: profile.created_at ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "—" },
                         { label: "Tier", value: tier },
                         { label: "Clubs Visited", value: uniqueClubIds.length },
                         { label: "Reviews Left", value: reviews.length },
@@ -718,10 +688,11 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                       <Btn primary onClick={() => setEditingProfile(true)}>Edit Profile</Btn>
                       <Btn onClick={() => { setShowProfile(false); setEditingProfile(false); }}>Close</Btn>
                     </div>
+                    <Btn onClick={handleLogout}>Log Out</Btn>
                   </>
                 ) : (
                   <>
@@ -729,7 +700,6 @@ export default function App() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
                       {[
                         { key: "displayName", label: "Display Name", type: "text" },
-                        { key: "email", label: "Email", type: "email" },
                         { key: "city", label: "City", type: "text" },
                       ].map(field => (
                         <div key={field.key}>
@@ -761,7 +731,8 @@ export default function App() {
                             boxSizing: "border-box", appearance: "none",
                           }}
                         >
-                          {ALL_CLUBS.map(c => (
+                          <option value="">Not set</option>
+                          {clubs.map(c => (
                             <option key={c.id} value={c.id}>{c.name} — {c.city}</option>
                           ))}
                         </select>
@@ -785,7 +756,7 @@ export default function App() {
                     </div>
 
                     <div style={{ display: "flex", gap: 8 }}>
-                      <Btn primary onClick={save}>Save</Btn>
+                      <Btn primary onClick={() => handleSaveProfile(draft)}>Save</Btn>
                       <Btn onClick={() => setEditingProfile(false)}>Cancel</Btn>
                     </div>
                   </>
@@ -818,7 +789,7 @@ export default function App() {
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 13, color: "#0A0A0F", fontWeight: 700, fontFamily: "system-ui, sans-serif",
         }}>
-          {profile.displayName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+          {(profile?.display_name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
         </button>
       </div>
 
@@ -901,7 +872,7 @@ export default function App() {
                       </div>
                       <div style={{ position: "relative", marginTop: 3, display: "flex", gap: 1 }}>
                         {[1, 2, 3, 4, 5].map(star => (
-                          <span key={star} style={{ fontSize: 7, color: star <= (s.review?.rating || 0) ? "#D4A017" : "#2A2A35" }}>★</span>
+                          <span key={star} style={{ fontSize: 7, color: star <= (reviews.find(r => r.clubId === s.clubId)?.rating || 0) ? "#D4A017" : "#2A2A35" }}>★</span>
                         ))}
                       </div>
                       <div style={{ fontSize: 7, color: "#4A4540", marginTop: 2, fontFamily: "system-ui, sans-serif", position: "relative" }}>
@@ -960,15 +931,18 @@ export default function App() {
                 <div style={{ textAlign: "center", marginBottom: 16 }}>
                   <SectionLabel>Top Collectors</SectionLabel>
                 </div>
-                {leaderboard.map(p => (
-                  <div key={p.name} style={{
+                {leaderboard.length === 0 && (
+                  <div style={{ textAlign: "center", color: "#4A4540", fontSize: 12, fontFamily: "system-ui, sans-serif" }}>No members yet — be the first to check in.</div>
+                )}
+                {leaderboard.map((p, i) => (
+                  <div key={p.userId} style={{
                     display: "flex", alignItems: "center", gap: 14, padding: "12px 16px",
                     borderRadius: 12, marginBottom: 6,
                     background: p.isYou ? "linear-gradient(145deg, #1A1520, #201828)" : "transparent",
                     border: p.isYou ? "1px solid #CD7F32" : "1px solid transparent",
                   }}>
-                    <div style={{ width: 28, fontSize: p.rank <= 3 ? 18 : 14, textAlign: "center", color: p.rank <= 3 ? "#F0EDE6" : "#4A4540", fontFamily: "system-ui, sans-serif" }}>
-                      {p.rank === 1 ? "👑" : p.rank === 2 ? "🥈" : p.rank === 3 ? "🥉" : p.rank}
+                    <div style={{ width: 28, fontSize: i < 3 ? 18 : 14, textAlign: "center", color: i < 3 ? "#F0EDE6" : "#4A4540", fontFamily: "system-ui, sans-serif" }}>
+                      {i === 0 ? "👑" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, color: p.isYou ? "#CD7F32" : "#E8E4DD", fontWeight: p.isYou ? 600 : 400 }}>{p.name}</div>
@@ -992,8 +966,8 @@ export default function App() {
         <>
           <div style={{ position: "relative", zIndex: 1, padding: "24px 24px 12px", textAlign: "center" }}>
             <div style={{ fontSize: 10, letterSpacing: 5, textTransform: "uppercase", color: "#8A8070", marginBottom: 4 }}>Club Admin</div>
-            <h1 style={{ fontSize: 22, fontWeight: 400, margin: "0 0 2px", color: "#F0EDE6", letterSpacing: 1 }}>Motor City Jacks</h1>
-            <div style={{ fontSize: 11, color: "#5A5550", fontFamily: "system-ui, sans-serif" }}>Detroit, Michigan</div>
+            <h1 style={{ fontSize: 22, fontWeight: 400, margin: "0 0 2px", color: "#F0EDE6", letterSpacing: 1 }}>{adminClub?.name || "No club selected"}</h1>
+            <div style={{ fontSize: 11, color: "#5A5550", fontFamily: "system-ui, sans-serif" }}>{adminClub?.city || "Set a home club in your profile to preview its admin dashboard"}</div>
           </div>
 
           <div style={{ display: "flex", padding: "0 24px", position: "relative", zIndex: 1 }}>
@@ -1016,9 +990,9 @@ export default function App() {
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 20 }}>
                   {[
-                    { label: "Total check-ins", value: adminCheckIns.reduce((s, c) => s + (c.visitCount || 1), 0) },
-                    { label: "Unique members", value: adminCheckIns.length },
-                    { label: "Avg rating", value: adminReviews.length ? (adminReviews.reduce((s, r) => s + r.rating, 0) / adminReviews.length).toFixed(1) : "—" },
+                    { label: "Total check-ins", value: adminStamps.reduce((s, c) => s + (c.visitCount || 1), 0) },
+                    { label: "Unique members", value: adminStamps.length },
+                    { label: "Avg rating", value: adminClub?.avgRating || "—" },
                     { label: "Reviews", value: adminReviews.length },
                   ].map(s => (
                     <Card key={s.label} style={{ padding: 16 }}>
@@ -1029,9 +1003,9 @@ export default function App() {
                 </div>
 
                 <SectionLabel>Recent activity</SectionLabel>
-                {checkIns.filter(c => c.clubId === "c15").slice(-5).reverse().map((c, i) => (
+                {adminStamps.slice(-5).reverse().map((c, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1A1A22" }}>
-                    <div style={{ fontSize: 13, color: "#E8E4DD" }}>Check-in #{c.visitCount || 1}</div>
+                    <div style={{ fontSize: 13, color: "#E8E4DD" }}>Check-in x{c.visitCount || 1}</div>
                     <div style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif" }}>{fmtDate(c.date)}</div>
                   </div>
                 ))}
@@ -1053,7 +1027,7 @@ export default function App() {
                     <div style={{ fontSize: 60, opacity: qrActive ? 1 : 0.2 }}>📱</div>
                   </div>
                   <div style={{ fontSize: 11, color: "#8A8070", fontFamily: "system-ui, sans-serif", marginBottom: 4 }}>
-                    jackoffclubs.com/checkin/motor-city-jacks-d4k2
+                    jackoffclubs.com/checkin/{adminClub?.code || "..."}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 12 }}>
                     <span style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif" }}>{qrActive ? "Active" : "Disabled"}</span>
