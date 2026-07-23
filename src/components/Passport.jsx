@@ -348,11 +348,20 @@ export default function Passport() {
   const [showScanner, setShowScanner] = useState(false);
   const [toast, setToast] = useState(null);
   const [celebration, setCelebration] = useState(null);
-  const [qrActive, setQrActive] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  const [adminClubs, setAdminClubs] = useState([]);
+  const [activeAdminClubId, setActiveAdminClubId] = useState(null);
+  const [adminOverview, setAdminOverview] = useState(null);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [myClaims, setMyClaims] = useState([]);
+  const [claimForm, setClaimForm] = useState({
+    mode: "existing", clubId: "", newName: "", newCity: "", newRegion: "", newCountry: "USA", contactNote: "",
+  });
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
 
   const buildStamps = useCallback((checkInRows, clubsById) => {
     const byClub = new Map();
@@ -462,6 +471,85 @@ export default function Passport() {
     window.location.reload();
   }
 
+  const loadAdminData = useCallback(async () => {
+    setAdminLoading(true);
+    try {
+      const [myClubsRes, claimsRes] = await Promise.all([
+        fetchJSON("/api/admin/my-clubs"),
+        fetchJSON("/api/club-claims"),
+      ]);
+      setAdminClubs(myClubsRes.clubs.map(normalizeClub));
+      setMyClaims(claimsRes.claims);
+      setActiveAdminClubId(prev =>
+        prev && myClubsRes.clubs.some(c => c.id === prev) ? prev : myClubsRes.clubs[0]?.id || null
+      );
+    } catch (err) {
+      setToast(err.message || "Could not load admin data");
+    } finally {
+      setAdminLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (screen === "admin") loadAdminData();
+  }, [screen, loadAdminData]);
+
+  useEffect(() => {
+    if (!activeAdminClubId) { setAdminOverview(null); return; }
+    let cancelled = false;
+    fetchJSON(`/api/admin/clubs/${activeAdminClubId}/overview`)
+      .then(data => { if (!cancelled) setAdminOverview(data); })
+      .catch(err => { if (!cancelled) setToast(err.message || "Could not load club data"); });
+    return () => { cancelled = true; };
+  }, [activeAdminClubId]);
+
+  async function refreshAdminOverview() {
+    if (!activeAdminClubId) return;
+    const data = await fetchJSON(`/api/admin/clubs/${activeAdminClubId}/overview`);
+    setAdminOverview(data);
+  }
+
+  async function handleToggleQr(qrCode) {
+    try {
+      await fetchJSON(`/api/admin/clubs/${activeAdminClubId}/qr`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qrCodeId: qrCode.id, active: !qrCode.active }),
+      });
+      await refreshAdminOverview();
+    } catch (err) {
+      setToast(err.message || "Could not update QR code");
+    }
+  }
+
+  async function handleSubmitClaim() {
+    if (!claimForm.contactNote.trim()) {
+      setToast("Tell us how we can verify you run this club");
+      return;
+    }
+    setClaimSubmitting(true);
+    try {
+      const body = claimForm.mode === "existing"
+        ? { clubId: claimForm.clubId, contactNote: claimForm.contactNote }
+        : {
+            newClub: { name: claimForm.newName, city: claimForm.newCity, region: claimForm.newRegion, country: claimForm.newCountry },
+            contactNote: claimForm.contactNote,
+          };
+      await fetchJSON("/api/club-claims", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      setToast("Request submitted — we'll review it soon.");
+      setClaimForm({ mode: "existing", clubId: "", newName: "", newCity: "", newRegion: "", newCountry: "USA", contactNote: "" });
+      await loadAdminData();
+    } catch (err) {
+      setToast(err.message || "Could not submit request");
+    } finally {
+      setClaimSubmitting(false);
+    }
+  }
+
   async function handleCheckIn(code) {
     if (!code) return;
     setShowScanner(false);
@@ -525,9 +613,10 @@ export default function Passport() {
   const earnedAchievements = achievements;
 
   const homeClub = clubs.find(c => c.id === profile?.home_club_id);
-  const adminClub = homeClub || clubs[0];
-  const adminStamps = adminClub ? stamps.filter(s => s.clubId === adminClub.id) : [];
-  const adminReviews = adminClub ? reviews.filter(r => r.clubId === adminClub.id) : [];
+  const adminClub = adminOverview?.club;
+  const adminCheckIns = adminOverview?.checkIns || [];
+  const adminReviews = adminOverview?.reviews || [];
+  const adminQrCodes = adminOverview?.qrCodes || [];
 
   return (
     <div style={{
@@ -964,134 +1053,246 @@ export default function Passport() {
       {/* ─── ADMIN SCREEN ─────────────────────────────────────────────── */}
       {screen === "admin" && (
         <>
-          <div style={{ position: "relative", zIndex: 1, padding: "24px 24px 12px", textAlign: "center" }}>
-            <div style={{ fontSize: 10, letterSpacing: 5, textTransform: "uppercase", color: "#8A8070", marginBottom: 4 }}>Club Admin</div>
-            <h1 style={{ fontSize: 22, fontWeight: 400, margin: "0 0 2px", color: "#F0EDE6", letterSpacing: 1 }}>{adminClub?.name || "No club selected"}</h1>
-            <div style={{ fontSize: 11, color: "#5A5550", fontFamily: "system-ui, sans-serif" }}>{adminClub?.city || "Set a home club in your profile to preview its admin dashboard"}</div>
-          </div>
+          {adminLoading && adminClubs.length === 0 && (
+            <div style={{ padding: 40, textAlign: "center", color: "#6B6560", fontSize: 12, fontFamily: "system-ui, sans-serif" }}>Loading...</div>
+          )}
 
-          <div style={{ display: "flex", padding: "0 24px", position: "relative", zIndex: 1 }}>
-            {["overview", "qr codes", "reviews"].map(t => (
-              <button key={t} onClick={() => setAdminTab(t)} style={{
-                flex: 1, padding: "12px 0", background: "none", border: "none",
-                borderBottom: adminTab === t ? "2px solid #CD7F32" : "2px solid transparent",
-                color: adminTab === t ? "#E8E4DD" : "#5A5550",
-                fontSize: 11, letterSpacing: 3, textTransform: "uppercase",
-                cursor: "pointer", fontFamily: "system-ui, sans-serif",
-              }}>
-                {t}
-              </button>
-            ))}
-          </div>
+          {!adminLoading && adminClubs.length === 0 && (
+            <div style={{ position: "relative", zIndex: 1, padding: "24px 24px 80px" }}>
+              <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ fontSize: 10, letterSpacing: 5, textTransform: "uppercase", color: "#8A8070", marginBottom: 4 }}>Club Admin</div>
+                <h1 style={{ fontSize: 20, fontWeight: 400, margin: "0 0 8px", color: "#F0EDE6" }}>Run a Jack Off Club?</h1>
+                <div style={{ fontSize: 12, color: "#6B6560", fontFamily: "system-ui, sans-serif", lineHeight: 1.6 }}>
+                  Request admin access to your club's page. We manually verify every request before granting access.
+                </div>
+              </div>
 
-          <div style={{ position: "relative", zIndex: 1, padding: "20px 24px 80px" }}>
-
-            {adminTab === "overview" && (
-              <>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 20 }}>
-                  {[
-                    { label: "Total check-ins", value: adminStamps.reduce((s, c) => s + (c.visitCount || 1), 0) },
-                    { label: "Unique members", value: adminStamps.length },
-                    { label: "Avg rating", value: adminClub?.avgRating || "—" },
-                    { label: "Reviews", value: adminReviews.length },
-                  ].map(s => (
-                    <Card key={s.label} style={{ padding: 16 }}>
-                      <div style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#6B6560", fontFamily: "system-ui, sans-serif", marginBottom: 6 }}>{s.label}</div>
-                      <div style={{ fontSize: 28, fontWeight: 300, color: "#F0EDE6" }}>{s.value}</div>
+              {myClaims.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <SectionLabel>Your requests</SectionLabel>
+                  {myClaims.map(c => (
+                    <Card key={c.id} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontSize: 13, color: "#E8E4DD" }}>{c.clubs ? c.clubs.name : c.proposed_name}</div>
+                      <div style={{
+                        fontSize: 10, letterSpacing: 1, textTransform: "uppercase", fontFamily: "system-ui, sans-serif",
+                        color: c.status === "approved" ? "#7FB37F" : c.status === "rejected" ? "#E07856" : "#CD7F32",
+                      }}>
+                        {c.status}
+                      </div>
                     </Card>
                   ))}
                 </div>
+              )}
 
-                <SectionLabel>Recent activity</SectionLabel>
-                {adminStamps.slice(-5).reverse().map((c, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1A1A22" }}>
-                    <div style={{ fontSize: 13, color: "#E8E4DD" }}>Check-in x{c.visitCount || 1}</div>
-                    <div style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif" }}>{fmtDate(c.date)}</div>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {adminTab === "qr codes" && (
-              <>
-                <Card style={{ padding: 24, textAlign: "center", marginBottom: 20 }}>
-                  <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: qrActive ? "#CD7F32" : "#4A4540", fontFamily: "system-ui, sans-serif", marginBottom: 12 }}>
-                    {qrActive ? "Active QR code" : "QR code disabled"}
-                  </div>
-                  <div style={{
-                    width: 160, height: 160, margin: "0 auto 16px", borderRadius: 12,
-                    background: qrActive ? "#F0EDE6" : "#2A2A35",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    transition: "all 0.3s",
+              <SectionLabel>Request access</SectionLabel>
+              <Card style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                  <button onClick={() => setClaimForm(f => ({ ...f, mode: "existing" }))} style={{
+                    flex: 1, padding: "8px 0", background: "none", border: "none",
+                    borderBottom: claimForm.mode === "existing" ? "2px solid #CD7F32" : "2px solid transparent",
+                    color: claimForm.mode === "existing" ? "#E8E4DD" : "#5A5550",
+                    fontSize: 10, letterSpacing: 2, textTransform: "uppercase", cursor: "pointer", fontFamily: "system-ui, sans-serif",
                   }}>
-                    <div style={{ fontSize: 60, opacity: qrActive ? 1 : 0.2 }}>📱</div>
-                  </div>
-                  <div style={{ fontSize: 11, color: "#8A8070", fontFamily: "system-ui, sans-serif", marginBottom: 4 }}>
-                    jackoffclubs.com/checkin/{adminClub?.code || "..."}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 12 }}>
-                    <span style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif" }}>{qrActive ? "Active" : "Disabled"}</span>
-                    <div onClick={() => setQrActive(!qrActive)} style={{
-                      width: 44, height: 24, borderRadius: 12, cursor: "pointer", position: "relative",
-                      background: qrActive ? "linear-gradient(135deg, #8B4513, #CD7F32)" : "#2A2A35", transition: "background 0.3s",
-                    }}>
-                      <div style={{ width: 18, height: 18, borderRadius: 9, background: "#F0EDE6", position: "absolute", top: 3, left: qrActive ? 23 : 3, transition: "left 0.3s" }} />
-                    </div>
-                  </div>
-                </Card>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <Btn primary>Generate new QR code</Btn>
-                  <Btn>Download for print</Btn>
-                  <Btn>Create event-specific code</Btn>
+                    Claim existing club
+                  </button>
+                  <button onClick={() => setClaimForm(f => ({ ...f, mode: "new" }))} style={{
+                    flex: 1, padding: "8px 0", background: "none", border: "none",
+                    borderBottom: claimForm.mode === "new" ? "2px solid #CD7F32" : "2px solid transparent",
+                    color: claimForm.mode === "new" ? "#E8E4DD" : "#5A5550",
+                    fontSize: 10, letterSpacing: 2, textTransform: "uppercase", cursor: "pointer", fontFamily: "system-ui, sans-serif",
+                  }}>
+                    Add a new club
+                  </button>
                 </div>
-              </>
-            )}
 
-            {adminTab === "reviews" && (
-              <>
-                <Card style={{ padding: 20, textAlign: "center", marginBottom: 20 }}>
-                  <div style={{ fontSize: 36, fontWeight: 300, color: "#F0EDE6" }}>
-                    {adminReviews.length ? (adminReviews.reduce((s, r) => s + r.rating, 0) / adminReviews.length).toFixed(1) : "—"}
+                {claimForm.mode === "existing" ? (
+                  <select
+                    value={claimForm.clubId}
+                    onChange={e => setClaimForm(f => ({ ...f, clubId: e.target.value }))}
+                    style={{
+                      width: "100%", padding: "10px 14px", background: "#0E0E14",
+                      border: "1px solid #2A2A35", borderRadius: 10, color: "#E8E4DD",
+                      fontSize: 13, fontFamily: "system-ui, sans-serif", outline: "none",
+                      boxSizing: "border-box", marginBottom: 12, appearance: "none",
+                    }}
+                  >
+                    <option value="">Select your club...</option>
+                    {clubs.map(c => <option key={c.id} value={c.id}>{c.name} — {c.city}</option>)}
+                  </select>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
+                    <input placeholder="Club name" value={claimForm.newName} onChange={e => setClaimForm(f => ({ ...f, newName: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 14px", background: "#0E0E14", border: "1px solid #2A2A35", borderRadius: 10, color: "#E8E4DD", fontSize: 13, fontFamily: "system-ui, sans-serif", outline: "none", boxSizing: "border-box" }} />
+                    <input placeholder="City, State" value={claimForm.newCity} onChange={e => setClaimForm(f => ({ ...f, newCity: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 14px", background: "#0E0E14", border: "1px solid #2A2A35", borderRadius: 10, color: "#E8E4DD", fontSize: 13, fontFamily: "system-ui, sans-serif", outline: "none", boxSizing: "border-box" }} />
+                    <input placeholder="Region (e.g. Southeast)" value={claimForm.newRegion} onChange={e => setClaimForm(f => ({ ...f, newRegion: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 14px", background: "#0E0E14", border: "1px solid #2A2A35", borderRadius: 10, color: "#E8E4DD", fontSize: 13, fontFamily: "system-ui, sans-serif", outline: "none", boxSizing: "border-box" }} />
                   </div>
-                  <StarRating rating={Math.round(adminReviews.length ? adminReviews.reduce((s, r) => s + r.rating, 0) / adminReviews.length : 0)} size={18} />
-                  <div style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif", marginTop: 6 }}>
-                    Based on {adminReviews.length} review{adminReviews.length !== 1 ? "s" : ""}
-                  </div>
-                  <div style={{ marginTop: 14, padding: "0 16px" }}>
-                    {[5, 4, 3, 2, 1].map(star => {
-                      const count = adminReviews.filter(r => r.rating === star).length;
-                      const pct = adminReviews.length ? Math.round((count / adminReviews.length) * 100) : 0;
-                      return (
-                        <div key={star} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                          <span style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif", width: 12, textAlign: "right" }}>{star}</span>
-                          <span style={{ fontSize: 10, color: "#D4A017" }}>★</span>
-                          <div style={{ flex: 1, height: 6, background: "#1A1A22", borderRadius: 3, overflow: "hidden" }}>
-                            <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #8B4513, #CD7F32)", borderRadius: 3 }} />
-                          </div>
-                          <span style={{ fontSize: 10, color: "#4A4540", fontFamily: "system-ui, sans-serif", width: 28, textAlign: "right" }}>{pct}%</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
+                )}
 
-                <SectionLabel>Member reviews</SectionLabel>
-                {adminReviews.map((r, i) => (
-                  <Card key={i} style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <StarRating rating={r.rating} size={12} />
-                    </div>
-                    {r.body && (
-                      <div style={{ fontSize: 13, color: "#A09888", fontStyle: "italic", lineHeight: 1.5, fontFamily: "system-ui, sans-serif" }}>
-                        "{r.body}"
-                      </div>
-                    )}
-                  </Card>
+                <textarea
+                  placeholder="How can we verify you run this club? (e.g. business email, website, social handle)"
+                  value={claimForm.contactNote}
+                  onChange={e => setClaimForm(f => ({ ...f, contactNote: e.target.value }))}
+                  style={{
+                    width: "100%", minHeight: 70, background: "#0E0E14", border: "1px solid #2A2A35",
+                    borderRadius: 10, padding: 12, color: "#E8E4DD", fontSize: 13, fontFamily: "system-ui, sans-serif",
+                    resize: "vertical", outline: "none", lineHeight: 1.5, boxSizing: "border-box", marginBottom: 12,
+                  }}
+                />
+
+                <Btn primary onClick={handleSubmitClaim} style={{ opacity: claimSubmitting ? 0.6 : 1 }}>
+                  {claimSubmitting ? "Submitting..." : "Submit Request"}
+                </Btn>
+              </Card>
+            </div>
+          )}
+
+          {adminClubs.length > 0 && (
+            <>
+              <div style={{ position: "relative", zIndex: 1, padding: "24px 24px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: 10, letterSpacing: 5, textTransform: "uppercase", color: "#8A8070", marginBottom: 4 }}>Club Admin</div>
+                {adminClubs.length > 1 ? (
+                  <select
+                    value={activeAdminClubId || ""}
+                    onChange={e => setActiveAdminClubId(e.target.value)}
+                    style={{
+                      background: "none", border: "none", color: "#F0EDE6", fontSize: 20,
+                      fontFamily: "'Georgia', 'Palatino', serif", textAlign: "center", outline: "none", cursor: "pointer",
+                    }}
+                  >
+                    {adminClubs.map(c => <option key={c.id} value={c.id} style={{ background: "#151520" }}>{c.name}</option>)}
+                  </select>
+                ) : (
+                  <h1 style={{ fontSize: 22, fontWeight: 400, margin: "0 0 2px", color: "#F0EDE6", letterSpacing: 1 }}>{adminClub?.name}</h1>
+                )}
+                <div style={{ fontSize: 11, color: "#5A5550", fontFamily: "system-ui, sans-serif" }}>{adminClub?.city}</div>
+              </div>
+
+              <div style={{ display: "flex", padding: "0 24px", position: "relative", zIndex: 1 }}>
+                {["overview", "qr codes", "reviews"].map(t => (
+                  <button key={t} onClick={() => setAdminTab(t)} style={{
+                    flex: 1, padding: "12px 0", background: "none", border: "none",
+                    borderBottom: adminTab === t ? "2px solid #CD7F32" : "2px solid transparent",
+                    color: adminTab === t ? "#E8E4DD" : "#5A5550",
+                    fontSize: 11, letterSpacing: 3, textTransform: "uppercase",
+                    cursor: "pointer", fontFamily: "system-ui, sans-serif",
+                  }}>
+                    {t}
+                  </button>
                 ))}
-              </>
-            )}
-          </div>
+              </div>
+
+              <div style={{ position: "relative", zIndex: 1, padding: "20px 24px 80px" }}>
+
+                {adminTab === "overview" && (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 20 }}>
+                      {[
+                        { label: "Total check-ins", value: adminCheckIns.length },
+                        { label: "Unique members", value: adminOverview?.uniqueMembers ?? 0 },
+                        { label: "Avg rating", value: adminClub?.avg_rating || "—" },
+                        { label: "Reviews", value: adminReviews.length },
+                      ].map(s => (
+                        <Card key={s.label} style={{ padding: 16 }}>
+                          <div style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#6B6560", fontFamily: "system-ui, sans-serif", marginBottom: 6 }}>{s.label}</div>
+                          <div style={{ fontSize: 28, fontWeight: 300, color: "#F0EDE6" }}>{s.value}</div>
+                        </Card>
+                      ))}
+                    </div>
+
+                    <SectionLabel>Recent activity</SectionLabel>
+                    {adminCheckIns.length === 0 && <div style={{ color: "#4A4540", fontSize: 12, fontFamily: "system-ui, sans-serif" }}>No check-ins yet.</div>}
+                    {adminCheckIns.slice(0, 8).map((c) => (
+                      <div key={c.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1A1A22" }}>
+                        <div style={{ fontSize: 13, color: "#E8E4DD" }}>{c.profiles?.display_name || "Member"}</div>
+                        <div style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif" }}>{fmtDate(c.checked_in_at)}</div>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {adminTab === "qr codes" && (
+                  <>
+                    {adminQrCodes.length === 0 && <div style={{ color: "#4A4540", fontSize: 12, fontFamily: "system-ui, sans-serif" }}>No QR codes yet.</div>}
+                    {adminQrCodes.map(qr => (
+                      <Card key={qr.id} style={{ padding: 24, textAlign: "center", marginBottom: 16 }}>
+                        <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: qr.active ? "#CD7F32" : "#4A4540", fontFamily: "system-ui, sans-serif", marginBottom: 12 }}>
+                          {qr.active ? "Active QR code" : "QR code disabled"}
+                        </div>
+                        <div style={{
+                          width: 160, height: 160, margin: "0 auto 16px", borderRadius: 12,
+                          background: qr.active ? "#F0EDE6" : "#2A2A35",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          transition: "all 0.3s",
+                        }}>
+                          <div style={{ fontSize: 60, opacity: qr.active ? 1 : 0.2 }}>📱</div>
+                        </div>
+                        <div style={{ fontSize: 11, color: "#8A8070", fontFamily: "system-ui, sans-serif", marginBottom: 4 }}>
+                          jackoffclubs.com/checkin/{qr.code}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 12 }}>
+                          <span style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif" }}>{qr.active ? "Active" : "Disabled"}</span>
+                          <div onClick={() => handleToggleQr(qr)} style={{
+                            width: 44, height: 24, borderRadius: 12, cursor: "pointer", position: "relative",
+                            background: qr.active ? "linear-gradient(135deg, #8B4513, #CD7F32)" : "#2A2A35", transition: "background 0.3s",
+                          }}>
+                            <div style={{ width: 18, height: 18, borderRadius: 9, background: "#F0EDE6", position: "absolute", top: 3, left: qr.active ? 23 : 3, transition: "left 0.3s" }} />
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </>
+                )}
+
+                {adminTab === "reviews" && (
+                  <>
+                    <Card style={{ padding: 20, textAlign: "center", marginBottom: 20 }}>
+                      <div style={{ fontSize: 36, fontWeight: 300, color: "#F0EDE6" }}>
+                        {adminReviews.length ? (adminReviews.reduce((s, r) => s + r.rating, 0) / adminReviews.length).toFixed(1) : "—"}
+                      </div>
+                      <StarRating rating={Math.round(adminReviews.length ? adminReviews.reduce((s, r) => s + r.rating, 0) / adminReviews.length : 0)} size={18} />
+                      <div style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif", marginTop: 6 }}>
+                        Based on {adminReviews.length} review{adminReviews.length !== 1 ? "s" : ""}
+                      </div>
+                      <div style={{ marginTop: 14, padding: "0 16px" }}>
+                        {[5, 4, 3, 2, 1].map(star => {
+                          const count = adminReviews.filter(r => r.rating === star).length;
+                          const pct = adminReviews.length ? Math.round((count / adminReviews.length) * 100) : 0;
+                          return (
+                            <div key={star} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                              <span style={{ fontSize: 11, color: "#6B6560", fontFamily: "system-ui, sans-serif", width: 12, textAlign: "right" }}>{star}</span>
+                              <span style={{ fontSize: 10, color: "#D4A017" }}>★</span>
+                              <div style={{ flex: 1, height: 6, background: "#1A1A22", borderRadius: 3, overflow: "hidden" }}>
+                                <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #8B4513, #CD7F32)", borderRadius: 3 }} />
+                              </div>
+                              <span style={{ fontSize: 10, color: "#4A4540", fontFamily: "system-ui, sans-serif", width: 28, textAlign: "right" }}>{pct}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Card>
+
+                    <SectionLabel>Member reviews</SectionLabel>
+                    {adminReviews.length === 0 && <div style={{ color: "#4A4540", fontSize: 12, fontFamily: "system-ui, sans-serif" }}>No reviews yet.</div>}
+                    {adminReviews.map((r) => (
+                      <Card key={r.id} style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                          <span style={{ fontSize: 12, color: "#8A8070", fontFamily: "system-ui, sans-serif" }}>{r.profiles?.display_name || "Member"}</span>
+                          <StarRating rating={r.rating} size={12} />
+                        </div>
+                        {r.body && (
+                          <div style={{ fontSize: 13, color: "#A09888", fontStyle: "italic", lineHeight: 1.5, fontFamily: "system-ui, sans-serif" }}>
+                            "{r.body}"
+                          </div>
+                        )}
+                      </Card>
+                    ))}
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
